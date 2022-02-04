@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "github.com/Titouan-Esc;go-user-grpc";
