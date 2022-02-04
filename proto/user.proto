@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package user;
 
-option go_package = "github.com/Titouan-Esc;go-user-grpc";
+option go_package = "github.com/Titouan-Esc/golang-grpc;go_user_grpc";
 
 //  Création du service qui va créer un User 
 service UserManagement {
