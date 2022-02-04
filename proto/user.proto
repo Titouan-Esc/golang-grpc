@@ -3,3 +3,22 @@ syntax = "proto3";
 package user;
 
 option go_package = "github.com/Titouan-Esc;go-user-grpc";
+
+//  Création du service qui va créer un User 
+service UserManagement {
+    rpc CreateNewuser (NewUser) returns (User) {}
+}
+
+// Ce que vas contenir le NewUser
+message NewUser {
+    string name = 1;
+    int32 age = 2;
+}
+
+// Ce que vas contenir l'User
+message User {
+    string name = 1;
+    int32 age = 2;
+    // On vient définir l'id de User
+    int32 id = 3;
+}
