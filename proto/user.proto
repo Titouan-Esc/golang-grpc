@@ -7,6 +7,7 @@ option go_package = "github.com/Titouan-Esc/golang-grpc;go_user_grpc";
 //  Création du service qui va créer un User 
 service UserManagement {
     rpc CreateNewuser (NewUser) returns (User) {}
+    rpc GetUsers (GetUsersParams) returns (UserList) {} // Utilise un message vide car on vas seulement retourner la liste des users
 }
 
 // Ce que vas contenir le NewUser
@@ -21,4 +22,13 @@ message User {
     int32 age = 2;
     // On vient définir l'id de User
     int32 id = 3;
+}
+
+// Création du message vide
+message GetUsersParams {
+
+}
+
+message UserList {
+    repeated User users = 1; // "repeated" pour répéter la liste des users
 }
