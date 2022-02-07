@@ -52,7 +52,7 @@ func (s *UserManagementServer) Run() error {
 	// ? Créer un server
 	server := grpc.NewServer()
 	// ? Enregistrer le server
-	pb.RegisterUserManagementServer(server, &UserManagementServer{})
+	pb.RegisterUserManagementServer(server, s)
 	log.Printf("Server listening at %v", lis.Addr())
 
 	return server.Serve(lis)

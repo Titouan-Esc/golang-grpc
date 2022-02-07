@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -45,4 +46,14 @@ func main() {
 		Age: %d
 		Id: %d`, res.GetName(), res.GetAge(), res.GetId())
 	}
+
+	// ? Création d'une variable params pour le service GetUsers
+	params := &pb.GetUsersParams{}
+	// ? Faire appel au service GetUsers
+	res, err := client.GetUsers(ctx, params)
+	if err != nil {
+		log.Fatalf("Could not retrieve users: %v", err)
+	}
+	log.Print("\nUser List: \n")
+	fmt.Printf("res.GetUsers(): %v\n", res.GetUsers())
 }
