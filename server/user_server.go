@@ -2,15 +2,14 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"log"
-	"math/rand"
 	"net"
-	"os"
 
 	pb "github.com/Titouan-Esc/golang-grpc/proto"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/encoding/protojson"
+	// "github.com/uptrace/bun"
+	// "github.com/uptrace/bun/driver/pgdriver"
+	// "github.com/uptrace/bun/dialect/pgdialect"
 )
 
 // ? Définir le port du server
@@ -26,63 +25,14 @@ func NewUserManagementServer() *UserManagementServer {
 
 // ! Implémentation du service grpc
 type UserManagementServer struct {
+	// conn *bun.Conn
 	pb.UnimplementedUserManagementServer // Ce connecte au server grpc
 }
 
 // ! Méthode CreateNewuser
 func (s *UserManagementServer) CreateNewuser(ctx context.Context, in *pb.NewUser) (*pb.User, error) {
-	log.Printf("Received: %v", in.GetName())
+	created_user := &pb.User{Name: in.GetName(), Age: in.GetAge()}
 
-	/*
-			- Une pour lire les fichiers
-			- L'autre qui vas être un pointer receiver de pb.UserList
-	*/
-	readBytes, err := ioutil.ReadFile("users.json")
-	var users_list *pb.UserList = &pb.UserList{}
-
-	/* 
-			- Création de l'id de l'user
-			- Création de l'user 
-	*/
-	var user_id int32 = int32(rand.Int31n(1000))
-	created_user := &pb.User{Name: in.GetName(), Age: in.GetAge(), Id: user_id}
-
-	if err != nil {
-		if os.IsNotExist(err) {
-			log.Print("File not found. Creating a new file")
-			users_list.Users = append(users_list.Users, created_user)
-
-			//	? Variable d'un fichier de bytes json
-			jsonBytes, err := protojson.Marshal(users_list)
-			if err != nil {
-				log.Fatalf("JSON Marshaling failed: %v", err)
-			}
-
-			// ? Ecriture un fichier dans la variable jsonBytes
-			if err := ioutil.WriteFile("users.json", jsonBytes, 0664); err != nil {
-				log.Fatalf("Failed write to file: %v", err)
-			}
-
-			return created_user, nil
-		} else {
-			log.Fatalf("Error reading file: %v", err)
-		}
-	}
-
-	if err := protojson.Unmarshal(readBytes, users_list); err != nil {
-		log.Fatalf("Failed to parse user list: %v", err)
-	}
-
-	users_list.Users = append(users_list.Users, created_user)
-	jsonBytes, err := protojson.Marshal(users_list)
-	if err != nil {
-		log.Fatalf("JSON Marshaling failed: %v", err)
-	}
-	if err := ioutil.WriteFile("users.json", jsonBytes, 0664); err != nil {
-		log.Fatalf("Failed write to file: %v", err)
-	}
-
-	// ? Retourner un user avec la référence du service protobuf
 	return created_user, nil
 }
 
@@ -104,23 +54,7 @@ func (s *UserManagementServer) Run() error {
 }
 
 func (s *UserManagementServer) GetUsers(ctx context.Context, in *pb.GetUsersParams) (*pb.UserList, error) {
-	/*
-		- Variable qui vas lire le fichier users.json
-		- Traiter l'erreur
-	*/
-	jsonBytes, err := ioutil.ReadFile("users.json")
-	if err != nil {
-		log.Fatalf("Failed read from file: %v", err)
-	}
-
-	/*
-		- Variable qui est un pointer receiver de UserList qui fas contenir notre json
-		- Traiter l'erreur
-	*/
 	var users_list *pb.UserList = &pb.UserList{}
-	if err := protojson.Unmarshal(jsonBytes, users_list); err != nil {
-		log.Fatalf("Unmarshaling failed: %v", err)
-	}
 
 	return users_list, nil
 }
