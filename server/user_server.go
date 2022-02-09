@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"net"
 
 	pb "github.com/Titouan-Esc/golang-grpc/proto"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
+	"github.com/uptrace/bun/driver/pgdriver"
+	"github.com/uptrace/bun/extra/bundebug"
 	"google.golang.org/grpc"
-	// "github.com/uptrace/bun"
-	// "github.com/uptrace/bun/driver/pgdriver"
-	// "github.com/uptrace/bun/dialect/pgdialect"
 )
 
 // ? Définir le port du server
@@ -25,7 +27,6 @@ func NewUserManagementServer() *UserManagementServer {
 
 // ! Implémentation du service grpc
 type UserManagementServer struct {
-	// conn *bun.Conn
 	pb.UnimplementedUserManagementServer // Ce connecte au server grpc
 }
 
@@ -36,8 +37,30 @@ func (s *UserManagementServer) CreateNewuser(ctx context.Context, in *pb.NewUser
 	return created_user, nil
 }
 
+// ! Méthode Getusers
+func (s *UserManagementServer) GetUsers(ctx context.Context, in *pb.GetUsersParams) (*pb.UserList, error) {
+	var users_list *pb.UserList = &pb.UserList{}
+
+	return users_list, nil
+}
+
 // ! Fonction qui vas run le code, ce qui nous permet de simplifier le code
 func (s *UserManagementServer) Run() error {
+	ctx := context.Background()
+
+	dsn := "postgres://titouanescorneboueu@localhost:5432/test?sslmode=disable"
+	pgdb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
+
+	db := bun.NewDB(pgdb, pgdialect.New())
+
+	db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
+
+	_, err := db.NewCreateTable().Model((*pb.User)(nil)).Exec(ctx)
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+
+
 	// ? Initialiser l'écoute au port
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
@@ -51,12 +74,6 @@ func (s *UserManagementServer) Run() error {
 	log.Printf("Server listening at %v", lis.Addr())
 
 	return server.Serve(lis)
-}
-
-func (s *UserManagementServer) GetUsers(ctx context.Context, in *pb.GetUsersParams) (*pb.UserList, error) {
-	var users_list *pb.UserList = &pb.UserList{}
-
-	return users_list, nil
 }
 
 func main() {
