@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"net"
+	"os"
 
 	pb "github.com/Titouan-Esc/golang-grpc/proto"
 	"github.com/uptrace/bun"
@@ -17,9 +18,13 @@ import (
 // ? Définir le port du server
 const (
 	port = ":50051"
+	dsn = "postgres://titouanescorneboueu@localhost:5432/test?sslmode=disable"
 )
 
-// ! Fonc pour la structure du UserManagementServer type
+var pgdb *sql.DB
+var db *bun.DB
+
+// ! Func pour la structure du UserManagementServer type
 func NewUserManagementServer() *UserManagementServer {
 	return &UserManagementServer{
 	}
@@ -34,6 +39,11 @@ type UserManagementServer struct {
 func (s *UserManagementServer) CreateNewuser(ctx context.Context, in *pb.NewUser) (*pb.User, error) {
 	created_user := &pb.User{Name: in.GetName(), Age: in.GetAge()}
 
+	// ? INSERT
+	db.NewInsert().
+		Model(created_user).
+		Exec(ctx)
+
 	return created_user, nil
 }
 
@@ -41,26 +51,16 @@ func (s *UserManagementServer) CreateNewuser(ctx context.Context, in *pb.NewUser
 func (s *UserManagementServer) GetUsers(ctx context.Context, in *pb.GetUsersParams) (*pb.UserList, error) {
 	var users_list *pb.UserList = &pb.UserList{}
 
+	// ? SELECT
+	db.NewSelect().
+		Model(users_list).
+		Exists(ctx)
+
 	return users_list, nil
 }
 
 // ! Fonction qui vas run le code, ce qui nous permet de simplifier le code
 func (s *UserManagementServer) Run() error {
-	ctx := context.Background()
-
-	dsn := "postgres://titouanescorneboueu@localhost:5432/test?sslmode=disable"
-	pgdb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
-
-	db := bun.NewDB(pgdb, pgdialect.New())
-
-	db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
-
-	_, err := db.NewCreateTable().Model((*pb.User)(nil)).Exec(ctx)
-	if err != nil {
-		log.Fatalf("Error: %v", err)
-	}
-
-
 	// ? Initialiser l'écoute au port
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
@@ -77,9 +77,19 @@ func (s *UserManagementServer) Run() error {
 }
 
 func main() {
-	/*
-		C'est la seule chose que nous avons besoin d'avoir dans la func main
-	*/
+	ctx := context.Background()
+	pgdb = sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
+	db = bun.NewDB(pgdb, pgdialect.New())
+
+	db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
+
+	_, err := db.NewCreateTable().Model((*pb.User)(nil)).IfNotExists().Exec(ctx)
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
 	// ? Instancier un nouveau UserManagementServer
 	var user_server *UserManagementServer = NewUserManagementServer()
 	// ? Appeler la fonction Run avec la variable au dessus 
